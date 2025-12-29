@@ -1,5 +1,7 @@
 import logoImg from '@/assets/logo.svg';
 import { defaultFooterDom } from '@/layouts/Footer';
+import { menuFooterRender } from '@/layouts/menuFooterRender';
+import FixSettingBtn from '@/layouts/Setting';
 
 // 运行时配置
 
@@ -19,7 +21,15 @@ export const layout = () => {
   return {
     logo: logoImg,
     footerRender: () => defaultFooterDom,
-    rightRender: () => null,
+    menuFooterRender: menuFooterRender,
+    childrenRender: (children: any) => {
+      return (
+        <>
+          {children}
+          <FixSettingBtn />
+        </>
+      );
+    },
     menu: {
       locale: false,
     },

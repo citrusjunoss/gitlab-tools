@@ -1,4 +1,5 @@
 import {
+  getCurrentGitlabUser,
   getGitlabGroups,
   getGitlabProjects,
   searchCodeInProject,
@@ -34,6 +35,7 @@ export interface GitlabModelState {
   projectSearched: number;
   allGroups: any[];
   allProjects: any[];
+  currentUser: any | null;
   allGroupsNumber: number;
   allProjectsNumber: number;
   codeResult: CodeResult[];
@@ -59,6 +61,7 @@ const useGitlabModel = () => {
     excludePattern: '',
     allGroups: [],
     allProjects: [],
+    currentUser: null,
     allGroupsNumber: 0,
     allProjectsNumber: 0,
     codeResult: [],
@@ -173,6 +176,33 @@ const useGitlabModel = () => {
     await fetchAllProjectsRemote();
   }, [state.allGroups]);
 
+  const fetchCurrentUserRemote = useCallback(async () => {
+    const token = localStorage.getItem('gitlab_token') || '';
+    if (!token) return null;
+    try {
+      const user = await getCurrentGitlabUser(token);
+      if (user) {
+        await setItem('gitlabCurrentUser', user, token);
+        updateState({ currentUser: user });
+      }
+      return user;
+    } catch (error) {
+      console.error('Failed to fetch current user', error);
+      return null;
+    }
+  }, [updateState]);
+
+  const fetchCurrentUser = useCallback(async () => {
+    const token = localStorage.getItem('gitlab_token') || '';
+    if (!token) return null;
+    const cachedUser = await getItem<any>('gitlabCurrentUser', token);
+    if (cachedUser) {
+      updateState({ currentUser: cachedUser });
+      return cachedUser;
+    }
+    return await fetchCurrentUserRemote();
+  }, [fetchCurrentUserRemote, updateState]);
+
   const search = useCallback(async () => {
     const {
       keyword,
@@ -275,12 +305,14 @@ const useGitlabModel = () => {
       if (Object.keys(updates).length > 0) {
         setState((prevState) => ({ ...prevState, ...updates }));
       }
+
       if (!gitlabToken || !gitlabUrl) {
+        if (history.location.pathname === '/gitlab-tools/settings') return;
         Modal.info({
           title: '提示',
           content: '请先在设置中配置 GitLab 实例地址和 Token',
           onOk() {
-            history.push('/');
+            history.push('/settings');
           },
         });
       }
@@ -295,12 +327,20 @@ const useGitlabModel = () => {
     }
   }, [state.allGroups]);
 
+  useEffect(() => {
+    if (state.token) {
+      fetchCurrentUser();
+    }
+  }, [state.token, fetchCurrentUser]);
+
   return {
     ...state,
     updateState,
     fetchAllGroups,
     fetchAllGroupsRemote,
     fetchAllProjectsRemote,
+    fetchCurrentUser,
+    fetchCurrentUserRemote,
     search,
   };
 };

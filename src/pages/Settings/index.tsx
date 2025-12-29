@@ -2,6 +2,7 @@ import { useModel } from '@umijs/max';
 import {
   Button,
   Col,
+  Descriptions,
   Divider,
   Form,
   Input,
@@ -26,9 +27,12 @@ const SettingsPage: React.FC = () => {
     gitlabUrl,
     allGroupsNumber,
     allProjectsNumber,
+    currentUser,
     fetchAllGroups,
     fetchAllProjectsRemote,
     fetchAllGroupsRemote,
+    fetchCurrentUser,
+    fetchCurrentUserRemote,
     init,
   } = useModel('gitlabModel');
 
@@ -40,7 +44,15 @@ const SettingsPage: React.FC = () => {
       token, // Display current token, but it's managed by SearchConditionForm
     });
     fetchAllGroups();
-  }, [concurrencyLimit, requestDelay, token, gitlabUrl]);
+    fetchCurrentUser();
+  }, [
+    concurrencyLimit,
+    requestDelay,
+    token,
+    gitlabUrl,
+    fetchAllGroups,
+    fetchCurrentUser,
+  ]);
 
   const onFinish = (values: any) => {
     updateState({ ...values });
@@ -57,8 +69,11 @@ const SettingsPage: React.FC = () => {
   const handleUpdateProjects = async () => {
     await fetchAllProjectsRemote();
   };
+  const handleRefreshCurrentUser = async () => {
+    await fetchCurrentUserRemote();
+  };
   return (
-    <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
+    <Space orientation="vertical" size="middle" style={{ display: 'flex' }}>
       <Spin spinning={!init}>
         <Divider>
           <Title level={3}>更新数据</Title>
@@ -77,6 +92,27 @@ const SettingsPage: React.FC = () => {
             </Button>
           </Col>
         </Row>
+        <Divider style={{ marginTop: 40 }}>
+          <Title level={4}>当前登录用户</Title>
+        </Divider>
+        <Descriptions bordered column={1} size="small">
+          <Descriptions.Item label="姓名">
+            {currentUser?.name || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="用户名">
+            {currentUser?.username || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="邮箱">
+            {currentUser?.email || '-'}
+          </Descriptions.Item>
+        </Descriptions>
+        <Button
+          style={{ marginTop: 12 }}
+          onClick={handleRefreshCurrentUser}
+          type="primary"
+        >
+          刷新当前用户
+        </Button>
         <Divider style={{ marginTop: 50 }}>
           <Title level={3}>系统配置</Title>
         </Divider>

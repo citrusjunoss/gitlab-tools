@@ -11,10 +11,10 @@
     "start": "npm run dev"
   },
   "dependencies": {
-    "@ant-design/icons": "^5.0.1",
-    "@ant-design/pro-components": "^2.4.4",
-    "@umijs/max": "^4.4.12",
-    "antd": "^5.4.0",
+    "@ant-design/icons": "^6.1.0",
+    "@ant-design/pro-components": "3.1.0-0",
+    "@umijs/max": "^4.6.15",
+    "antd": "^6.1.2",
     "localforage": "^1.10.0",
     "micromatch": "^4.0.8",
     "p-limit": "^7.1.1",
@@ -29,6 +29,7 @@
     "prettier": "^2.8.7",
     "prettier-plugin-organize-imports": "^3.2.2",
     "prettier-plugin-packagejson": "^2.4.3",
+    "tailwindcss": "^3",
     "typescript": "^5.0.3"
   },
   "pnpm": {

@@ -17,6 +17,20 @@ const routes: any[] = [
     component: '@/pages/Settings/index.tsx',
     icon: 'Setting',
     name: '系统配置',
+    hideInMenu: true,
+  },
+  {
+    path: '/nav',
+    component: '@/pages/nav/index.tsx',
+    icon: 'Appstore',
+    name: '工具导航',
+  },
+  {
+    path: '/auto-tag',
+    component: '@/pages/auto-tag/index.tsx',
+    icon: 'Tag',
+    name: 'Auto Tag',
+    hideInMenu: true,
   },
 ];
 

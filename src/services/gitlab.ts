@@ -51,7 +51,7 @@ export async function searchCodeInProject(
   token: string,
   ref?: string,
 ) {
-  const params: any = {
+  const params: Record<string, any> = {
     scope: 'blobs',
     search: keyword,
   };
@@ -66,5 +66,142 @@ export async function searchCodeInProject(
       'PRIVATE-TOKEN': token,
     },
     params,
+  });
+}
+
+export async function getProjectBranch(
+  projectId: number,
+  branch: string,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/branches/${encodeURIComponent(
+      branch,
+    )}`,
+    {
+      method: 'GET',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+    },
+  );
+}
+
+export async function getProjectTags(
+  projectId: number,
+  token: string,
+  params: Record<string, any> = {},
+) {
+  return request(`${GITLAB_API_BASE}/projects/${projectId}/repository/tags`, {
+    method: 'GET',
+    headers: {
+      'PRIVATE-TOKEN': token,
+    },
+    params: {
+      per_page: 20,
+      order_by: 'updated',
+      sort: 'desc',
+      ...params,
+    },
+  });
+}
+
+export async function getProjectTag(
+  projectId: number,
+  tagName: string,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/tags/${encodeURIComponent(
+      tagName,
+    )}`,
+    {
+      method: 'GET',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+    },
+  );
+}
+
+export async function compareProjectRefs(
+  projectId: number,
+  from: string,
+  to: string,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/compare`,
+    {
+      method: 'GET',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+      params: {
+        from,
+        to,
+      },
+    },
+  );
+}
+
+export async function listProjectCommits(
+  projectId: number,
+  token: string,
+  refName: string,
+  perPage: number = 100,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/commits`,
+    {
+      method: 'GET',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+      params: {
+        ref_name: refName,
+        per_page: perPage,
+      },
+    },
+  );
+}
+
+export async function createProjectTag(
+  projectId: number,
+  token: string,
+  payload: {
+    tag_name: string;
+    ref: string;
+    message?: string;
+  },
+) {
+  return request(`${GITLAB_API_BASE}/projects/${projectId}/repository/tags`, {
+    method: 'POST',
+    headers: {
+      'PRIVATE-TOKEN': token,
+    },
+    data: payload,
+  });
+}
+
+export async function getGitlabUsers(token: string, page: number = 1) {
+  return request(`${GITLAB_API_BASE}/users`, {
+    method: 'GET',
+    headers: {
+      'PRIVATE-TOKEN': token,
+    },
+    params: {
+      per_page: 100,
+      page,
+    },
+  });
+}
+
+export async function getCurrentGitlabUser(token: string) {
+  return request(`${GITLAB_API_BASE}/user`, {
+    method: 'GET',
+    headers: {
+      'PRIVATE-TOKEN': token,
+    },
   });
 }
