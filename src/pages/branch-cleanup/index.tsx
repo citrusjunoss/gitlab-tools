@@ -41,6 +41,8 @@ interface CleanupPlan {
   isDefault: boolean;
   isMerged: boolean;
   hasTagAtHead: boolean;
+  isIgnored: boolean;
+  ignoredRule?: string;
 }
 
 interface BranchInfo {
@@ -61,14 +63,46 @@ interface TagInfo {
   };
 }
 
-const PLAN_CACHE_KEY = 'branchCleanupPlans';
+const PLAN_CACHE_KEY = 'branchCleanupPlansV2';
 const DEFAULT_THRESHOLD_DAYS = 90;
 const DEFAULT_TARGET_BRANCH = 'release';
+const DEFAULT_IGNORE_BRANCH_RULES = [
+  'release',
+  'develop',
+  'test',
+  'uat',
+  'master',
+];
 
 const { Paragraph, Text } = Typography;
 
 const isActionablePlan = (plan: CleanupPlan) =>
   ['pending', 'failed'].includes(plan.status) && plan.branchName !== '-';
+
+const normalizeBranchRule = (value: string) => value.trim().toLowerCase();
+
+const normalizeBranchRules = (values: string[] = []) =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => normalizeBranchRule(value))
+        .filter((value) => Boolean(value)),
+    ),
+  );
+
+const matchIgnoredBranchRule = (branchName: string, rules: string[]) => {
+  const lowered = branchName.toLowerCase();
+  return rules.find((rule) => {
+    if (!rule) return false;
+    return (
+      lowered === rule ||
+      lowered.startsWith(`${rule}/`) ||
+      lowered.startsWith(`${rule}-`) ||
+      lowered.startsWith(`${rule}_`) ||
+      lowered.startsWith(`${rule}.`)
+    );
+  });
+};
 
 const getErrorMessage = (error: any, fallback: string) => {
   const detail =
@@ -135,6 +169,7 @@ const BranchCleanupPage: React.FC = () => {
     form.setFieldsValue({
       thresholdDays: DEFAULT_THRESHOLD_DAYS,
       targetBranch: DEFAULT_TARGET_BRANCH,
+      ignoreBranchRules: DEFAULT_IGNORE_BRANCH_RULES,
     });
   }, [form]);
 
@@ -151,6 +186,7 @@ const BranchCleanupPage: React.FC = () => {
         setSelectedRowKeys(
           cachedPlans
             .filter((plan) => ['pending', 'failed'].includes(plan.status))
+            .filter((plan) => plan.branchName !== '-')
             .map((plan) => `${plan.projectId}:${plan.branchName}`),
         );
       }
@@ -262,6 +298,7 @@ const BranchCleanupPage: React.FC = () => {
       project: any,
       thresholdDays: number,
       targetBranch: string,
+      ignoreBranchRules: string[],
     ): Promise<CleanupPlan[]> => {
       const base = {
         projectId: project.id,
@@ -282,6 +319,7 @@ const BranchCleanupPage: React.FC = () => {
             isDefault: false,
             isMerged: false,
             hasTagAtHead: false,
+            isIgnored: false,
           },
         ];
       }
@@ -303,6 +341,7 @@ const BranchCleanupPage: React.FC = () => {
             .map((mr) => mr?.source_branch)
             .filter((name): name is string => Boolean(name)),
         );
+        const normalizedIgnoreRules = normalizeBranchRules(ignoreBranchRules);
         const thresholdTime = Date.now() - thresholdDays * 24 * 60 * 60 * 1000;
 
         return branches
@@ -319,12 +358,20 @@ const BranchCleanupPage: React.FC = () => {
             const hasTagAtHead = Boolean(
               branch.commit?.id && tagCommitIds.has(branch.commit.id),
             );
+            const ignoredRule = matchIgnoredBranchRule(
+              branch.name,
+              normalizedIgnoreRules,
+            );
             const isExpired = commitTime > 0 && commitTime < thresholdTime;
+            const isIgnored = Boolean(ignoredRule);
             const eligible =
+              !isIgnored &&
               !isDefault &&
               !isProtected &&
               (isExpired || (isMerged && hasTagAtHead));
-            const reason = isExpired
+            const reason = isIgnored
+              ? `命中忽略规则：${ignoredRule}`
+              : isExpired
               ? `最后提交超过 ${thresholdDays} 天`
               : isMerged && hasTagAtHead
               ? `已合并到 ${targetBranch} 且 HEAD 已打 tag`
@@ -338,6 +385,8 @@ const BranchCleanupPage: React.FC = () => {
               status: eligible ? 'pending' : 'skipped',
               detail: eligible
                 ? reason
+                : isIgnored
+                ? `忽略分支规则：${ignoredRule}`
                 : isDefault
                 ? '默认分支，跳过'
                 : isProtected
@@ -347,6 +396,8 @@ const BranchCleanupPage: React.FC = () => {
               isDefault,
               isMerged,
               hasTagAtHead,
+              isIgnored,
+              ignoredRule,
             };
           });
       } catch (error: any) {
@@ -362,6 +413,7 @@ const BranchCleanupPage: React.FC = () => {
             isDefault: false,
             isMerged: false,
             hasTagAtHead: false,
+            isIgnored: false,
           },
         ];
       }
@@ -381,6 +433,7 @@ const BranchCleanupPage: React.FC = () => {
         values.thresholdDays || DEFAULT_THRESHOLD_DAYS,
       );
       const targetBranch = values.targetBranch || DEFAULT_TARGET_BRANCH;
+      const ignoreBranchRules = values.ignoreBranchRules || [];
 
       if (projectIds.length === 0) {
         messageApi.warning('请至少选择一个项目');
@@ -399,6 +452,7 @@ const BranchCleanupPage: React.FC = () => {
           project,
           thresholdDays,
           targetBranch,
+          ignoreBranchRules,
         );
         nextPlans.push(...projectPlans);
       }
@@ -544,6 +598,7 @@ const BranchCleanupPage: React.FC = () => {
           {record.isProtected && <Tag color="purple">受保护</Tag>}
           {record.isMerged && <Tag color="green">已合并</Tag>}
           {record.hasTagAtHead && <Tag color="gold">已打 Tag</Tag>}
+          {record.isIgnored && <Tag color="orange">忽略</Tag>}
         </Space>
       ),
     },
@@ -681,6 +736,22 @@ const BranchCleanupPage: React.FC = () => {
                 />
               </Form.Item>
             </Space>
+            <Form.Item
+              label="忽略分支规则"
+              name="ignoreBranchRules"
+              tooltip="支持填写分支名或前缀，例如 release、develop、test、uat、master"
+            >
+              <Select
+                mode="tags"
+                allowClear
+                placeholder="release, develop, test, uat, master"
+                tokenSeparators={[',', ' ']}
+                options={DEFAULT_IGNORE_BRANCH_RULES.map((value) => ({
+                  label: value,
+                  value,
+                }))}
+              />
+            </Form.Item>
             <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
               <Space>
                 <Button
@@ -700,6 +771,7 @@ const BranchCleanupPage: React.FC = () => {
                     form.setFieldsValue({
                       thresholdDays: DEFAULT_THRESHOLD_DAYS,
                       targetBranch: DEFAULT_TARGET_BRANCH,
+                      ignoreBranchRules: DEFAULT_IGNORE_BRANCH_RULES,
                     });
                   }}
                 >
@@ -712,7 +784,7 @@ const BranchCleanupPage: React.FC = () => {
             type="info"
             showIcon
             style={{ marginTop: 20 }}
-            message="默认跳过默认分支和受保护分支。删除前会先生成计划，再逐项确认。"
+            message="默认跳过默认分支、受保护分支和你配置的忽略分支。删除前会先生成计划，再逐项确认。"
           />
         </Card>
 
