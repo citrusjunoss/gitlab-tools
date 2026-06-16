@@ -58,6 +58,7 @@ interface AutoTagPlan {
 const { Paragraph, Text } = Typography;
 
 const PLAN_CACHE_KEY = 'autoTagPlans';
+const CONVENTIONAL_TAG_PATTERN = /^(fix|feat)(?:\([^)]+\))?!?:/i;
 
 const formatDateLabel = (value: string) => {
   const date = new Date(value);
@@ -236,7 +237,8 @@ const AutoTagPage: React.FC = () => {
           );
 
         const seenSubjects = new Set<string>();
-        const entries: CommitEntry[] = [];
+        const matchedEntries: CommitEntry[] = [];
+        const allEntries: CommitEntry[] = [];
         let hasFix = false;
         let hasFeat = false;
 
@@ -245,12 +247,8 @@ const AutoTagPage: React.FC = () => {
           if (!subject) {
             return;
           }
-          const lower = subject.toLowerCase();
-          const isFix = lower.startsWith('fix:');
-          const isFeat = lower.startsWith('feat:');
-          if (!isFix && !isFeat) {
-            return;
-          }
+          const isFix = /^fix(?:\([^)]+\))?!?:/i.test(subject);
+          const isFeat = /^feat(?:\([^)]+\))?!?:/i.test(subject);
           if (isFix) {
             hasFix = true;
           }
@@ -261,13 +259,18 @@ const AutoTagPage: React.FC = () => {
             return;
           }
           seenSubjects.add(subject);
-          entries.push({
+          const entry = {
             title: subject,
             sha: commit.id,
             webUrl:
               commit.web_url || `${project.web_url}/-/commit/${commit.id}`,
-          });
+          };
+          allEntries.push(entry);
+          if (CONVENTIONAL_TAG_PATTERN.test(subject)) {
+            matchedEntries.push(entry);
+          }
         });
+        const entries = matchedEntries.length > 0 ? matchedEntries : allEntries;
 
         const basePlan: AutoTagPlan = {
           projectId: project.id,
@@ -285,11 +288,11 @@ const AutoTagPage: React.FC = () => {
           detail: '',
         };
 
-        if (entries.length === 0) {
+        if (allEntries.length === 0) {
           return {
             ...basePlan,
             status: 'failed',
-            detail: '没有以 fix: 或 feat: 开头的提交',
+            detail: '没有发现自最新 Tag 以来的提交',
           };
         }
 
@@ -312,7 +315,10 @@ const AutoTagPage: React.FC = () => {
           tagType,
           tagMessage,
           status: 'pending',
-          detail: `共匹配 ${entries.length} 个提交`,
+          detail:
+            matchedEntries.length > 0
+              ? `共匹配 ${entries.length} 个提交`
+              : `未发现 fix/feat 提交，改按 ${entries.length} 个新提交生成计划`,
         };
       } catch (error: any) {
         return {

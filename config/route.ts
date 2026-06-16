@@ -32,6 +32,13 @@ const routes: any[] = [
     name: 'Auto Tag',
     hideInMenu: true,
   },
+  {
+    path: '/auto-update-dep',
+    component: '@/pages/auto-update-dep/index.tsx',
+    icon: 'CloudSync',
+    name: '依赖自动更新',
+    hideInMenu: true,
+  },
 ];
 
 export default routes;

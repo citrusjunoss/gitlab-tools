@@ -205,3 +205,105 @@ export async function getCurrentGitlabUser(token: string) {
     },
   });
 }
+
+export async function getRepositoryFile(
+  projectId: number,
+  filePath: string,
+  ref: string,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/files/${encodeURIComponent(
+      filePath,
+    )}`,
+    {
+      method: 'GET',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+      params: {
+        ref,
+      },
+    },
+  );
+}
+
+export async function createProjectBranch(
+  projectId: number,
+  branch: string,
+  ref: string,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/branches`,
+    {
+      method: 'POST',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+      data: {
+        branch,
+        ref,
+      },
+    },
+  );
+}
+
+export async function updateRepositoryFile(
+  projectId: number,
+  filePath: string,
+  branch: string,
+  content: string,
+  commitMessage: string,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/files/${encodeURIComponent(
+      filePath,
+    )}`,
+    {
+      method: 'PUT',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+      data: {
+        branch,
+        content,
+        commit_message: commitMessage,
+      },
+    },
+  );
+}
+
+export async function listProjectMergeRequests(
+  projectId: number,
+  token: string,
+  params: Record<string, any> = {},
+) {
+  return request(`${GITLAB_API_BASE}/projects/${projectId}/merge_requests`, {
+    method: 'GET',
+    headers: {
+      'PRIVATE-TOKEN': token,
+    },
+    params,
+  });
+}
+
+export async function createProjectMergeRequest(
+  projectId: number,
+  token: string,
+  payload: {
+    source_branch: string;
+    target_branch: string;
+    title: string;
+    description?: string;
+  },
+) {
+  return request(`${GITLAB_API_BASE}/projects/${projectId}/merge_requests`, {
+    method: 'POST',
+    headers: {
+      'PRIVATE-TOKEN': token,
+    },
+    data: payload,
+  });
+}

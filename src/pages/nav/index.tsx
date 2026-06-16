@@ -35,8 +35,7 @@ const NavPage: React.FC = () => {
           variant="outlined"
           hoverable
           onClick={() => {
-            // Placeholder for navigation or action
-            console.log('Auto Update Dep clicked');
+            history.push('/auto-update-dep');
           }}
           style={{ height: 180, borderRadius: 12, cursor: 'pointer' }}
         >
