@@ -1,4 +1,8 @@
-import { CloudSyncOutlined, TagOutlined } from '@ant-design/icons';
+import {
+  BranchesOutlined,
+  CloudSyncOutlined,
+  TagOutlined,
+} from '@ant-design/icons';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
 import { history } from '@umijs/max';
 
@@ -48,6 +52,29 @@ const NavPage: React.FC = () => {
             </div>
             <div style={{ color: '#666', marginTop: 4, fontSize: 12 }}>
               依赖自动更新工具
+            </div>
+          </div>
+        </ProCard>
+
+        <ProCard
+          colSpan={{ xs: 24, sm: 12, md: 8, lg: 6 }}
+          layout="center"
+          variant="outlined"
+          hoverable
+          onClick={() => {
+            history.push('/branch-cleanup');
+          }}
+          style={{ height: 180, borderRadius: 12, cursor: 'pointer' }}
+        >
+          <div style={{ textAlign: 'center' }}>
+            <BranchesOutlined
+              style={{ fontSize: 40, color: '#fa8c16', marginBottom: 12 }}
+            />
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#333' }}>
+              分支清理
+            </div>
+            <div style={{ color: '#666', marginTop: 4, fontSize: 12 }}>
+              批量删除过时分支
             </div>
           </div>
         </ProCard>

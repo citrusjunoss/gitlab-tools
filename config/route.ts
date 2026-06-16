@@ -39,6 +39,13 @@ const routes: any[] = [
     name: '依赖自动更新',
     hideInMenu: true,
   },
+  {
+    path: '/branch-cleanup',
+    component: '@/pages/branch-cleanup/index.tsx',
+    icon: 'Branches',
+    name: '分支清理',
+    hideInMenu: true,
+  },
 ];
 
 export default routes;

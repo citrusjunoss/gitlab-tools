@@ -87,6 +87,26 @@ export async function getProjectBranch(
   );
 }
 
+export async function listProjectBranches(
+  projectId: number,
+  token: string,
+  params: Record<string, any> = {},
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/branches`,
+    {
+      method: 'GET',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+      params: {
+        per_page: 100,
+        ...params,
+      },
+    },
+  );
+}
+
 export async function getProjectTags(
   projectId: number,
   token: string,
@@ -98,7 +118,7 @@ export async function getProjectTags(
       'PRIVATE-TOKEN': token,
     },
     params: {
-      per_page: 20,
+      per_page: 100,
       order_by: 'updated',
       sort: 'desc',
       ...params,
@@ -244,6 +264,39 @@ export async function createProjectBranch(
       data: {
         branch,
         ref,
+      },
+    },
+  );
+}
+
+export async function deleteProjectBranch(
+  projectId: number,
+  branchName: string,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/branches/${encodeURIComponent(
+      branchName,
+    )}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'PRIVATE-TOKEN': token,
+      },
+    },
+  );
+}
+
+export async function deleteProjectMergedBranches(
+  projectId: number,
+  token: string,
+) {
+  return request(
+    `${GITLAB_API_BASE}/projects/${projectId}/repository/merged_branches`,
+    {
+      method: 'DELETE',
+      headers: {
+        'PRIVATE-TOKEN': token,
       },
     },
   );
